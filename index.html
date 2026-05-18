@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NeXuS AI — Professional Stock Analyzer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&family=Exo+2:wght@200;300;400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ═══════════════════════════════════════════
+       DESIGN TOKENS
+    ═══════════════════════════════════════════ */
+    :root {
+      --bg-void:        #020408;
+      --bg-surface:     #080e18;
+      --bg-card:        #0c1520;
+      --bg-card-hover:  #101e2e;
+      --bg-input:       #0a1420;
+      --border-dim:     #1a2d42;
+      --border-mid:     #1f3d5c;
+      --border-glow:    #0a7fd4;
+
+      --cyan:           #00d4ff;
+      --cyan-dim:       #005f7a;
+      --cyan-glow:      rgba(0, 212, 255, 0.15);
+      --cyan-intense:   rgba(0, 212, 255, 0.4);
+
+      --green:          #00ff9d;
+      --green-dim:      #003d26;
+      --green-glow:     rgba(0, 255, 157, 0.12);
+
+      --red:            #ff3d5a;
+      --red-dim:        #3d0010;
+      --red-glow:       rgba(255, 61, 90, 0.12);
+
+      --yellow:         #ffd93d;
+      --yellow-dim:     #3d3000;
+      --yellow-glow:    rgba(255, 217, 61, 0.12);
+
+      --orange:         #ff8c42;
+      --purple:         #a855f7;
+      --purple-dim:     rgba(168, 85, 247, 0.1);
+
+      --text-primary:   #e8f4fd;
+      --text-secondary: #7ba7c4;
+      --text-dim:       #3d5f7a;
+      --text-muted:     #1e3a50;
+
+      --font-display:   'Exo 2', sans-serif;
+      --font-mono:      'Share Tech Mono', monospace;
+      --font-ui:        'Rajdhani', sans-serif;
+
+      --radius-sm:      4px;
+      --radius-md:      8px;
+      --radius-lg:      12px;
+      --radius-xl:      16px;
+
+      --transition:     all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-slow: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ═══════════════════════════════════════════
+       RESET & BASE
+    ═══════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg-void);
+      color: var(--text-primary);
+      font-family: var(--font-ui);
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Scan line effect */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 212, 255, 0.01) 2px,
+        rgba(0, 212, 255, 0.01) 4px
+      );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Background grid */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-image:
+        linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ═══════════════════════════════════════════
+       LAYOUT
+    ═══════════════════════════════════════════ */
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 20px 60px;
+    }
+
+    /* ═══════════════════════════════════════════
+       HEADER
+    ═══════════════════════════════════════════ */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 28px 0 20px;
+      border-bottom: 1px solid var(--border-dim);
+      margin-bottom: 40px;
+    }
+
+    .logo-block {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-icon {
+      width: 44px;
+      height: 44px;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .logo-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .logo-text {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .logo-name {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 4px;
+      color: var(--cyan);
+      text-shadow: 0 0 20px var(--cyan-intense);
+      line-height: 1;
+    }
+
+    .logo-sub {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 1px;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* ═══════════════════════════════════════════
+       INPUT SECTION
+    ═══════════════════════════════════════════ */
+    .input-section {
+      margin-bottom: 32px;
+    }
+
+    .input-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      gap: 12px;
+    }
+
+    .input-box {
+      position: relative;
+      flex: 1;
+    }
+
+    .input-prefix {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: var(--font-mono);
+      font-size: 18px;
+      color: var(--cyan);
+      z-index: 1;
+      pointer-events: none;
+      transition: var(--transition);
+    }
+
+    .main-input {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-lg);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 18px;
+      letter-spacing: 3px;
+      padding: 16px 20px 16px 44px;
+      outline: none;
+      text-transform: uppercase;
+      transition: var(--transition);
+    }
+
+    .main-input::placeholder {
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      font-size: 14px;
+    }
+
+    .main-input:focus {
+      border-color: var(--border-glow);
+      box-shadow: 0 0 0 1px var(--border-glow), 0 0 24px var(--cyan-glow);
+    }
+
+    .analyze-btn {
+      background: linear-gradient(135deg, #0050a0 0%, #003370 100%);
+      border: 1px solid var(--border-glow);
+      border-radius: var(--radius-lg);
+      color: var(--cyan);
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      padding: 0 32px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .analyze-btn::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.1), transparent);
+      transition: left 0.4s;
+    }
+
+    .analyze-btn:hover::before { left: 100%; }
+
+    .analyze-btn:hover {
+      background: linear-gradient(135deg, #0065c8 0%, #004090 100%);
+      box-shadow: 0 0 20px var(--cyan-glow), 0 0 40px var(--cyan-glow);
+      transform: translateY(-1px);
+    }
+
+    .analyze-btn:active {
+      transform: translateY(0);
+    }
+
+    .analyze-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Mode chips */
+    .mode-chips {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+
+    .mode-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border-dim);
+      background: var(--bg-card);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: var(--transition);
+      letter-spacing: 1px;
+    }
+
+    .mode-chip:hover {
+      border-color: var(--border-mid);
+      color: var(--text-secondary);
+    }
+
+    .mode-chip.active {
+      border-color: var(--cyan-dim);
+      color: var(--cyan);
+      background: rgba(0, 212, 255, 0.06);
+    }
+
+    .chip-prefix {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    /* ═══════════════════════════════════════════
+       LOADING STATE
+    ═══════════════════════════════════════════ */
+    .loading-state {
+      display: none;
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .loading-state.visible { display: block; }
+
+    .loading-ring {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 24px;
+      position: relative;
+    }
+
+    .loading-ring::before,
+    .loading-ring::after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+    }
+
+    .loading-ring::before {
+      width: 100%; height: 100%;
+      border: 2px solid var(--border-dim);
+    }
+
+    .loading-ring::after {
+      width: 100%; height: 100%;
+      border: 2px solid transparent;
+      border-top-color: var(--cyan);
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 3px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      animation: blink 1.5s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .loading-steps {
+      margin-top: 16px;
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+    }
+
+    .loading-step {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+    }
+
+    .loading-step.done { color: var(--green); }
+    .loading-step.active { color: var(--cyan); }
+
+    /* ═══════════════════════════════════════════
+       ERROR STATE
+    ═══════════════════════════════════════════ */
+    .error-state {
+      display: none;
+      padding: 20px 24px;
+      background: var(--red-dim);
+      border: 1px solid var(--red);
+      border-radius: var(--radius-lg);
+      color: var(--red);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      margin-bottom: 24px;
+    }
+
+    .error-state.visible { display: flex; align-items: center; gap: 12px; }
+
+    /* ═══════════════════════════════════════════
+       RESULT SECTIONS
+    ═══════════════════════════════════════════ */
+    .result-area {
+      display: none;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .result-area.visible { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── Stock Header Card ─── */
+    .stock-header {
+      background: var(--bg-card);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-xl);
+      padding: 24px 28px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .stock-ident {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .stock-ticker-display {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--cyan);
+      letter-spacing: 4px;
+      line-height: 1;
+      text-shadow: 0 0 20px var(--cyan-glow);
+    }
+
+    .stock-name-display {
+      font-family: var(--font-ui);
+      font-size: 14px;
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
+
+    .stock-exchange-badge {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 2px;
+      padding: 2px 8px;
+      border: 1px solid var(--border-dim);
+      border-radius: 3px;
+      width: fit-content;
+      margin-top: 4px;
+    }
+
+    .stock-price-block {
+      text-align: right;
+    }
+
+    .price-display {
+      font-family: var(--font-mono);
+      font-size: 36px;
+      font-weight: 400;
+      color: var(--text-primary);
+      line-height: 1;
+    }
+
+    .price-change {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    .price-change.up   { color: var(--green); }
+    .price-change.down { color: var(--red); }
+    .price-change.flat { color: var(--text-dim); }
+
+    .mode-badge {
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .mode-badge.penny    { background: var(--yellow-dim); color: var(--yellow); border: 1px solid var(--yellow); }
+    .mode-badge.growth   { background: var(--green-dim);  color: var(--green);  border: 1px solid var(--green); }
+    .mode-badge.value    { background: var(--purple-dim); color: var(--purple); border: 1px solid var(--purple); }
+    .mode-badge.fairvalue { background: var(--cyan-glow); color: var(--cyan);  border: 1px solid var(--cyan); }
+
+    /* ─── Key Metrics Grid ─── */
+    .section-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-dim);
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .metric-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      transition: var(--transition);
+    }
+
+    .metric-card:hover {
+      border-color: var(--border-mid);
+      background: var(--bg-card-hover);
+    }
+
+    .metric-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .metric-value {
+      font-family: var(--font-mono);
+      font-size: 16px;
+      color: var(--text-primary);
+      font-weight: 400;
+    }
+
+    .metric-value.positive { color: var(--green); }
+    .metric-value.negative { color: var(--red); }
+    .metric-value.neutral  { color: var(--cyan); }
+
+    /* ─── Filter Cards (Penny) ─── */
+    .filters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .filter-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      border-left: 3px solid transparent;
+      border-top: 1px solid var(--border-dim);
+      border-right: 1px solid var(--border-dim);
+      border-bottom: 1px solid var(--border-dim);
+      transition: var(--transition);
+    }
+
+    .filter-card:hover { background: var(--bg-card-hover); }
+    .filter-card.pass  { border-left-color: var(--green); background: rgba(0, 255, 157, 0.03); }
+    .filter-card.warn  { border-left-color: var(--yellow); background: rgba(255, 217, 61, 0.03); }
+    .filter-card.fail  { border-left-color: var(--red); background: rgba(255, 61, 90, 0.03); }
+
+    .filter-icon {
+      font-size: 20px;
+      line-height: 1;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .filter-body { flex: 1; min-width: 0; }
+
+    .filter-name {
+      font-family: var(--font-ui);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: 0.5px;
+      margin-bottom: 3px;
+    }
+
+    .filter-criteria {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+
+    .filter-value {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .filter-value.pass { color: var(--green); }
+    .filter-value.warn { color: var(--yellow); }
+    .filter-value.fail { color: var(--red); }
+
+    .filter-comment {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    /* Filter summary bar */
+    .filter-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-card);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .filter-counts {
+      display: flex;
+      gap: 20px;
+    }
+
+    .count-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+
+    .count-num {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .count-num.pass { color: var(--green); }
+    .count-num.warn { color: var(--yellow); }
+    .count-num.fail { color: var(--red); }
+
+    .count-label { color: var(--text-dim); font-size: 11px; letter-spacing: 1px; }
+
+    .overall-badge {
+      padding: 8px 16px;
+      border-radius: var(--radius-md);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 2px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .overall-badge.strong  { background: var(--green-dim);  color: var(--green);  border: 1px solid var(--green); }
+    .overall-badge.medium  { background: var(--yellow-dim); color: var(--yellow); border: 1px solid var(--yellow); }
+    .overall-badge.weak    { background: var(--red-dim);    color: var(--orange); border: 1px solid var(--orange); }
+    .overall-badge.danger  { background: var(--red-dim);    color: var(--red);    border: 1px solid var(--red); }
+
+    /* ─── Score Card (Growth / Value) ─── */
+    .score-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-xl);
+      padding: 24px 28px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+
+    .score-dial {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      flex-shrink: 0;
+    }
+
+    .score-dial svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .score-dial-track {
+      fill: none;
+      stroke: var(--border-dim);
+      stroke-width: 6;
+    }
+
+    .score-dial-fill {
+      fill: none;
+      stroke-width: 6;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1s ease;
+    }
+
+    .score-center {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    .score-num {
+      font-family: var(--font-mono);
+      font-size: 22px;
+      color: var(--text-primary);
+      line-height: 1;
+    }
+
+    .score-max {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-dim);
+    }
+
+    .score-details { flex: 1; }
+
+    .score-rating {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .score-factors {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .factor-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .factor-name {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 1px;
+      width: 140px;
+      flex-shrink: 0;
+    }
+
+    .factor-bar-track {
+      flex: 1;
+      height: 4px;
+      background: var(--border-dim);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .factor-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.8s ease;
+    }
+
+    .factor-bar-fill.excellent { background: var(--green); }
+    .factor-bar-fill.good      { background: var(--cyan); }
+    .factor-bar-fill.fair      { background: var(--yellow); }
+    .factor-bar-fill.poor      { background: var(--red); }
+
+    .factor-val {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      width: 70px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* ─── Fair Value: 10 Methods Grid ─── */
+    .fv-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .fv-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+      transition: var(--transition);
+    }
+
+    .fv-card:hover {
+      border-color: var(--border-mid);
+      background: var(--bg-card-hover);
+    }
+
+    .fv-card-icon {
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+
+    .fv-card-name {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .fv-card-value {
+      font-family: var(--font-mono);
+      font-size: 20px;
+      color: var(--text-primary);
+    }
+
+    .fv-card-value.na { color: var(--text-muted); font-size: 14px; }
+
+    .fv-card-vs {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      margin-top: 6px;
+    }
+
+    .fv-card-vs.above { color: var(--green); }
+    .fv-card-vs.below { color: var(--red); }
+    .fv-card-vs.near  { color: var(--yellow); }
+
+    .fv-card-desc {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    /* ─── Verdict Card ─── */
+    .verdict-card {
+      border-radius: var(--radius-xl);
+      padding: 28px 32px;
+      margin-bottom: 20px;
+      border: 1px solid;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .verdict-card::before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.15;
+    }
+
+    .verdict-card.bullish       { border-color: var(--green);  background: rgba(0, 255, 157, 0.04); }
+    .verdict-card.bullish::before { background: var(--green); }
+    .verdict-card.mildly-bullish  { border-color: var(--cyan);   background: rgba(0, 212, 255, 0.04); }
+    .verdict-card.mildly-bullish::before { background: var(--cyan); }
+    .verdict-card.neutral         { border-color: var(--yellow); background: rgba(255, 217, 61, 0.04); }
+    .verdict-card.neutral::before { background: var(--yellow); }
+    .verdict-card.mildly-bearish  { border-color: var(--orange); background: rgba(255, 140, 66, 0.04); }
+    .verdict-card.mildly-bearish::before { background: var(--orange); }
+    .verdict-card.bearish         { border-color: var(--red);    background: rgba(255, 61, 90, 0.04); }
+    .verdict-card.bearish::before { background: var(--red); }
+
+    .verdict-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .verdict-text {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      line-height: 1.2;
+    }
+
+    .verdict-prices {
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+
+    .verdict-price-item { display: flex; flex-direction: column; gap: 3px; }
+
+    .verdict-price-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .verdict-price-val {
+      font-family: var(--font-mono);
+      font-size: 24px;
+    }
+
+    .verdict-price-val.fv   { color: var(--cyan); }
+    .verdict-price-val.cur  { color: var(--text-primary); }
+    .verdict-price-val.up   { color: var(--green); }
+    .verdict-price-val.down { color: var(--red); }
+    .verdict-price-val.flat { color: var(--yellow); }
+
+    /* ─── AI Analysis Card ─── */
+    .ai-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-xl);
+      padding: 24px 28px;
+      margin-bottom: 20px;
+    }
+
+    .ai-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .ai-badge {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--purple);
+      border: 1px solid var(--purple);
+      padding: 3px 10px;
+      border-radius: 3px;
+    }
+
+    .ai-content {
+      font-family: var(--font-ui);
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.8;
+      white-space: pre-wrap;
+    }
+
+    .ai-content strong {
+      color: var(--text-primary);
+    }
+
+    /* ═══════════════════════════════════════════
+       HELP SECTION
+    ═══════════════════════════════════════════ */
+    .help-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 40px;
+    }
+
+    .help-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .help-card:hover {
+      border-color: var(--border-mid);
+      background: var(--bg-card-hover);
+      transform: translateY(-2px);
+    }
+
+    .help-syntax {
+      font-family: var(--font-mono);
+      font-size: 20px;
+      margin-bottom: 8px;
+      line-height: 1;
+    }
+
+    .help-mode {
+      font-family: var(--font-ui);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .help-desc {
+      font-size: 12px;
+      color: var(--text-dim);
+      line-height: 1.4;
+    }
+
+    /* ═══════════════════════════════════════════
+       FOOTER
+    ═══════════════════════════════════════════ */
+    .footer {
+      border-top: 1px solid var(--border-dim);
+      padding-top: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .footer-text {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+    }
+
+    /* ═══════════════════════════════════════════
+       RESPONSIVE
+    ═══════════════════════════════════════════ */
+    @media (max-width: 640px) {
+      .header { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .input-wrapper { flex-direction: column; }
+      .analyze-btn { padding: 14px; width: 100%; }
+      .stock-header { flex-direction: column; align-items: flex-start; }
+      .stock-price-block { text-align: left; }
+      .score-card { flex-direction: column; }
+      .verdict-prices { gap: 16px; }
+    }
+
+    /* ═══════════════════════════════════════════
+       UTILITY
+    ═══════════════════════════════════════════ */
+    .divider {
+      height: 1px;
+      background: var(--border-dim);
+      margin: 24px 0;
+    }
+
+    .text-green  { color: var(--green); }
+    .text-red    { color: var(--red); }
+    .text-yellow { color: var(--yellow); }
+    .text-cyan   { color: var(--cyan); }
+    .text-dim    { color: var(--text-dim); }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- ═══ HEADER ═══ -->
+  <header class="header">
+    <div class="logo-block">
+      <div class="logo-icon">
+        <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="22,2 42,12 42,32 22,42 2,32 2,12" fill="none" stroke="#00d4ff" stroke-width="1.5" opacity="0.4"/>
+          <polygon points="22,8 36,16 36,28 22,36 8,28 8,16" fill="none" stroke="#00d4ff" stroke-width="1" opacity="0.6"/>
+          <polygon points="22,14 30,19 30,25 22,30 14,25 14,19" fill="#00d4ff" opacity="0.15"/>
+          <line x1="22" y1="2" x2="22" y2="42" stroke="#00d4ff" stroke-width="0.5" opacity="0.3"/>
+          <line x1="2" y1="12" x2="42" y2="32" stroke="#00d4ff" stroke-width="0.5" opacity="0.3"/>
+          <line x1="2" y1="32" x2="42" y2="12" stroke="#00d4ff" stroke-width="0.5" opacity="0.3"/>
+          <circle cx="22" cy="22" r="3" fill="#00d4ff"/>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <div class="logo-name">NeXuS AI</div>
+        <div class="logo-sub">Stock Intelligence Platform</div>
+      </div>
+    </div>
+    <div class="header-status">
+      <div class="status-dot"></div>
+      <span>LIVE</span>
+      <span style="color:var(--border-mid)">|</span>
+      <span>Yahoo Finance</span>
+      <span style="color:var(--border-mid)">|</span>
+      <span>Gemini AI</span>
+    </div>
+  </header>
+
+  <!-- ═══ INPUT ═══ -->
+  <div class="input-section">
+    <span class="input-label">// Aksiya kodi kiriting</span>
+    <div class="input-wrapper">
+      <div class="input-box">
+        <span class="input-prefix" id="inputPrefix">›</span>
+        <input
+          class="main-input"
+          id="mainInput"
+          type="text"
+          placeholder="$AAPL yoki #TSLA yoki +MSFT yoki *NVDA*"
+          autocomplete="off"
+          autocorrect="off"
+          spellcheck="false"
+          maxlength="20"
+        />
+      </div>
+      <button class="analyze-btn" id="analyzeBtn" onclick="runAnalysis()">
+        TAHLIL QILISH
+      </button>
+    </div>
+    <div class="mode-chips">
+      <div class="mode-chip" onclick="setExample('$AAPL')">
+        <span class="chip-prefix text-yellow">$</span>
+        <span>PENNY STOCK</span>
+      </div>
+      <div class="mode-chip" onclick="setExample('#TSLA')">
+        <span class="chip-prefix text-green">#</span>
+        <span>GROWTH STOCK</span>
+      </div>
+      <div class="mode-chip" onclick="setExample('+MSFT')">
+        <span class="chip-prefix text-purple">+</span>
+        <span>VALUE STOCK</span>
+      </div>
+      <div class="mode-chip" onclick="setExample('*NVDA*')">
+        <span class="chip-prefix text-cyan">*</span>
+        <span>FAIR VALUE</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ HELP GRID (boshlang'ich) ═══ -->
+  <div id="helpSection">
+    <div class="section-title">Foydalanish qo'llanmasi</div>
+    <div class="help-grid">
+      <div class="help-card" onclick="setExample('$GME')">
+        <div class="help-syntax text-yellow">$TICKER</div>
+        <div class="help-mode">Penny Stock Tahlili</div>
+        <div class="help-desc">6-filter tekshiruvi: Float, Market Cap, Narx oralig'i, RS xavfi, Hajm, RVOL + AI fundamental baholash</div>
+      </div>
+      <div class="help-card" onclick="setExample('#NVDA')">
+        <div class="help-syntax text-green">#TICKER</div>
+        <div class="help-mode">Growth Stock Tahlili</div>
+        <div class="help-desc">O'sish ko'rsatkichlari balli, Revenue trend, FCF sifati + 3-6 oylik swing pozitsiya tavsiyasi</div>
+      </div>
+      <div class="help-card" onclick="setExample('+BRK.B')">
+        <div class="help-syntax text-purple">+TICKER</div>
+        <div class="help-mode">Value Stock Tahlili</div>
+        <div class="help-desc">Buffett uslubida P/E, P/B, xavfsizlik marjasi, dividend tahlili va intrinsik qiymat baholash</div>
+      </div>
+      <div class="help-card" onclick="setExample('*AAPL*')">
+        <div class="help-syntax text-cyan">*TICKER*</div>
+        <div class="help-mode">Fair Value Tahlili</div>
+        <div class="help-desc">10 usul: DCF, Graham, EV/EBITDA, P/S, FCF Yield, EPV, Rule of 40, Peer Average va o'rtacha adolatli narx</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LOADING ═══ -->
+  <div class="loading-state" id="loadingState">
+    <div class="loading-ring"></div>
+    <div class="loading-text" id="loadingText">BOZOR MA'LUMOTLARI YUKLANMOQDA</div>
+    <div class="loading-steps">
+      <div class="loading-step" id="step1">① Yahoo Finance</div>
+      <div class="loading-step" id="step2">② Gemini AI</div>
+      <div class="loading-step" id="step3">③ Hisob-kitob</div>
+    </div>
+  </div>
+
+  <!-- ═══ ERROR ═══ -->
+  <div class="error-state" id="errorState">
+    <span style="font-size:18px">⚠</span>
+    <span id="errorText"></span>
+  </div>
+
+  <!-- ═══ RESULT AREA ═══ -->
+  <div class="result-area" id="resultArea"></div>
+
+  <!-- ═══ FOOTER ═══ -->
+  <footer class="footer" style="margin-top:40px">
+    <span class="footer-text">NeXuS AI v2.0 — Faqat ma'lumot maqsadlarida. Investitsiya tavsiyasi emas.</span>
+    <span class="footer-text">Powered by Yahoo Finance & Google Gemini</span>
+  </footer>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// CONFIG & STATE
+// ═══════════════════════════════════════════════
+const API_ENDPOINT = '/.netlify/functions/analyze';
+
+let currentMode = null;
+let isLoading = false;
+
+// ═══════════════════════════════════════════════
+// INPUT PARSING — Aqlli rejim aniqlash
+// ═══════════════════════════════════════════════
+function parseInput(raw) {
+  const s = raw.trim();
+  if (!s) return null;
+
+  // *TICKER* → fairvalue
+  if (s.startsWith('*') && s.endsWith('*') && s.length > 2) {
+    return { ticker: s.slice(1, -1).toUpperCase(), mode: 'fairvalue' };
+  }
+  // $TICKER → penny
+  if (s.startsWith('$')) {
+    return { ticker: s.slice(1).toUpperCase(), mode: 'penny' };
+  }
+  // #TICKER → growth
+  if (s.startsWith('#')) {
+    return { ticker: s.slice(1).toUpperCase(), mode: 'growth' };
+  }
+  // +TICKER → value
+  if (s.startsWith('+')) {
+    return { ticker: s.slice(1).toUpperCase(), mode: 'value' };
+  }
+  // Prefix yo'q → fairvalue (default)
+  return { ticker: s.toUpperCase(), mode: 'fairvalue' };
+}
+
+// Input prefix'ni real vaqtda yangilash
+document.getElementById('mainInput').addEventListener('input', function() {
+  const val = this.value.trim();
+  const prefix = document.getElementById('inputPrefix');
+  if (val.startsWith('$'))      { prefix.style.color = 'var(--yellow)'; prefix.textContent = '$'; }
+  else if (val.startsWith('#')) { prefix.style.color = 'var(--green)';  prefix.textContent = '#'; }
+  else if (val.startsWith('+')) { prefix.style.color = 'var(--purple)'; prefix.textContent = '+'; }
+  else if (val.startsWith('*')) { prefix.style.color = 'var(--cyan)';   prefix.textContent = '*'; }
+  else                          { prefix.style.color = 'var(--cyan)';   prefix.textContent = '›'; }
+});
+
+document.getElementById('mainInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') runAnalysis();
+});
+
+function setExample(val) {
+  const input = document.getElementById('mainInput');
+  input.value = val;
+  input.dispatchEvent(new Event('input'));
+  input.focus();
+}
+
+// ═══════════════════════════════════════════════
+// MAIN: TAHLIL ISHGA TUSHIRISH
+// ═══════════════════════════════════════════════
+async function runAnalysis() {
+  if (isLoading) return;
+
+  const raw = document.getElementById('mainInput').value;
+  const parsed = parseInput(raw);
+
+  if (!parsed || !parsed.ticker) {
+    showError('Iltimos, ticker kiriting. Masalan: $GME yoki #NVDA yoki +AAPL yoki *TSLA*');
+    return;
+  }
+
+  const { ticker, mode } = parsed;
+  currentMode = mode;
+
+  setLoading(true);
+  hideError();
+  hideResult();
+  document.getElementById('helpSection').classList.add('hidden');
+
+  // Loading steps animatsiyasi
+  animateLoadingSteps(mode);
+
+  try {
+    const resp = await fetch(API_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ticker, mode }),
+    });
+
+    const data = await resp.json();
+
+    if (!resp.ok || data.error) {
+      showError(data.error || `Server xatosi: ${resp.status}`);
+      return;
+    }
+
+    renderResult(data);
+  } catch (err) {
+    showError('Tarmoq xatosi. Netlify funksiyasi ishlaydimi? ' + err.message);
+  } finally {
+    setLoading(false);
+  }
+}
+
+function animateLoadingSteps(mode) {
+  const steps = [
+    document.getElementById('step1'),
+    document.getElementById('step2'),
+    document.getElementById('step3'),
+  ];
+  steps.forEach(s => s.className = 'loading-step');
+
+  const texts = [
+    'Yahoo Finance dan ma\'lumot tortilmoqda...',
+    'Gemini AI tahlil qilmoqda...',
+    'Natijalar hisoblanmoqda...',
+  ];
+
+  let i = 0;
+  const interval = setInterval(() => {
+    if (i > 0) steps[i-1].classList.add('done');
+    if (i < steps.length) {
+      steps[i].classList.add('active');
+      document.getElementById('loadingText').textContent = texts[i].toUpperCase();
+      i++;
+    } else {
+      clearInterval(interval);
+    }
+  }, 800);
+}
+
+// ═══════════════════════════════════════════════
+// RENDER: Natijani ko'rsatish
+// ═══════════════════════════════════════════════
+function renderResult(data) {
+  const area = document.getElementById('resultArea');
+  let html = '';
+
+  const metrics = data.metrics || {};
+
+  // ─── Stock Header ───────────────────────────────────
+  const chg = metrics.change_pct || 0;
+  const chgClass = chg > 0 ? 'up' : chg < 0 ? 'down' : 'flat';
+  const chgSign = chg > 0 ? '+' : '';
+
+  html += `
+  <div class="stock-header">
+    <div class="stock-ident">
+      <div class="stock-ticker-display">${data.ticker}</div>
+      <div class="stock-name-display">${metrics.companyName || 'N/A'}</div>
+      <div class="stock-exchange-badge">${metrics.exchange || 'N/A'}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <span class="mode-badge ${data.mode}">${modeName(data.mode)}</span>
+      <div class="stock-price-block">
+        <div class="price-display">$${fmt(metrics.price, 2)}</div>
+        <div class="price-change ${chgClass}">${chgSign}${fmt(chg, 2)}%</div>
+      </div>
+    </div>
+  </div>`;
+
+  // ─── Key Metrics Grid ───────────────────────────────
+  html += renderMetricsGrid(metrics, data.mode);
+
+  // ─── Mode-specific content ──────────────────────────
+  if (data.mode === 'fairvalue') {
+    html += renderFairValue(data);
+  } else if (data.mode === 'penny') {
+    html += renderPenny(data);
+  } else if (data.mode === 'growth') {
+    html += renderGrowth(data);
+  } else if (data.mode === 'value') {
+    html += renderValue(data);
+  }
+
+  area.innerHTML = html;
+  showResult();
+
+  // Score dial animatsiyasi
+  setTimeout(() => {
+    document.querySelectorAll('.score-dial-fill[data-pct]').forEach(el => {
+      const pct = parseFloat(el.dataset.pct);
+      const r = 38;
+      const circ = 2 * Math.PI * r;
+      el.style.strokeDasharray = circ;
+      el.style.strokeDashoffset = circ - (pct / 100) * circ;
+    });
+    // FV bar animatsiya
+    document.querySelectorAll('.factor-bar-fill[data-width]').forEach(el => {
+      el.style.width = el.dataset.width + '%';
+    });
+  }, 100);
+}
+
+// ─── Key Metrics Grid ──────────────────────────────────
+function renderMetricsGrid(m, mode) {
+  const items = [
+    { label: 'MARKET CAP',    value: fmtBig(m.marketCap) },
+    { label: 'P/E (TTM)',     value: m.pe_ratio > 0 ? fmt(m.pe_ratio,1)+'x' : 'N/A' },
+    { label: 'FORWARD P/E',   value: m.forwardPE > 0 ? fmt(m.forwardPE,1)+'x' : 'N/A' },
+    { label: 'EPS (TTM)',     value: m.eps_ttm ? '$'+fmt(m.eps_ttm,2) : 'N/A' },
+    { label: 'REVENUE',       value: fmtBig(m.revenue_ttm) },
+    { label: 'NET MARGIN',    value: m.net_margin != null ? fmt(m.net_margin,1)+'%' : 'N/A', color: m.net_margin > 0 ? 'positive' : m.net_margin < 0 ? 'negative' : '' },
+    { label: 'FCF',           value: fmtBig(m.freeCashflow), color: m.freeCashflow > 0 ? 'positive' : 'negative' },
+    { label: 'BETA',          value: m.beta ? fmt(m.beta,2) : 'N/A' },
+    { label: '52W HIGH',      value: m.high_52 ? '$'+fmt(m.high_52,2) : 'N/A' },
+    { label: '52W LOW',       value: m.low_52 ? '$'+fmt(m.low_52,2) : 'N/A' },
+    { label: 'D/E NISBATI',   value: m.debt_equity != null && m.debt_equity > 0 ? fmt(m.debt_equity,1)+'%' : 'N/A', color: m.debt_equity > 200 ? 'negative' : m.debt_equity < 80 ? 'positive' : '' },
+    { label: 'CURR. RATIO',   value: m.current_ratio ? fmt(m.current_ratio,2)+'x' : 'N/A', color: m.current_ratio >= 2 ? 'positive' : m.current_ratio < 1 ? 'negative' : '' },
+  ];
+
+  let html = `<div class="section-title">Asosiy Ko'rsatkichlar</div><div class="metrics-grid">`;
+  items.forEach(item => {
+    html += `
+    <div class="metric-card">
+      <div class="metric-label">${item.label}</div>
+      <div class="metric-value ${item.color||''}">${item.value}</div>
+    </div>`;
+  });
+  html += `</div>`;
+  return html;
+}
+
+// ─── Fair Value Render ─────────────────────────────────
+function renderFairValue(data) {
+  const v = data.valuations || [];
+  const verdict = data.verdict || {};
+  const m = data.metrics || {};
+  const fv = verdict.fairValue || 0;
+  const price = verdict.currentPrice || 0;
+  const upside = verdict.upside || 0;
+  const verdictType = verdict.type || 'neutral';
+
+  let html = '';
+
+  // Moliyaviy asoslar
+  html += `<div class="section-title">Moliyaviy Asoslar (FY Prognoz)</div>
+  <div class="metrics-grid">`;
+
+  const fvMetrics = [
+    { label: 'FY REVENUE EST', value: fmtBig(data.raw?.merged?.fyRevenueEst) },
+    { label: 'FY FCF EST',     value: fmtBig(data.raw?.merged?.fyFcfEst), color: data.raw?.merged?.fyFcfEst > 0 ? 'positive' : 'negative' },
+    { label: 'EBITDA',         value: fmtBig(data.raw?.merged?.ebitda) },
+    { label: 'ADJ EPS EST',    value: data.raw?.merged?.adjustedEpsEst ? '$'+fmt(data.raw.merged.adjustedEpsEst,2) : 'N/A' },
+    { label: 'O\'SISH TEZLIGI', value: data.raw?.merged?.expectedGrowthRatePct ? fmt(data.raw.merged.expectedGrowthRatePct,1)+'%' : 'N/A', color: 'neutral' },
+    { label: 'TARIXIY P/E',    value: data.raw?.merged?.historicalPE ? fmt(data.raw.merged.historicalPE,1)+'x' : 'N/A' },
+    { label: 'NET CASH',       value: fmtBig(data.raw?.merged?.netCashPosition), color: (data.raw?.merged?.netCashPosition||0) > 0 ? 'positive' : 'negative' },
+    { label: 'SEKTORPEER P/S', value: data.raw?.merged?.historicalPS ? fmt(data.raw.merged.historicalPS,1)+'x' : 'N/A' },
+  ];
+
+  fvMetrics.forEach(item => {
+    html += `<div class="metric-card"><div class="metric-label">${item.label}</div><div class="metric-value ${item.color||''}">${item.value}</div></div>`;
+  });
+  html += `</div>`;
+
+  // 10 usul grid
+  html += `<div class="section-title">10 Ta Baholash Usuli</div><div class="fv-grid">`;
+  v.forEach(card => {
+    const val = card.value;
+    const isValid = val > 0 && isFinite(val);
+    let vsText = '', vsClass = '';
+    if (isValid && price > 0) {
+      const diff = ((val - price) / price) * 100;
+      if (diff > 8)      { vsText = `▲ Joriy narxdan ${fmt(diff,1)}% yuqori`; vsClass = 'above'; }
+      else if (diff < -8){ vsText = `▼ Joriy narxdan ${fmt(Math.abs(diff),1)}% past`; vsClass = 'below'; }
+      else               { vsText = `≈ Joriy narxga yaqin (${fmt(diff,1)}%)`; vsClass = 'near'; }
+    }
+    html += `
+    <div class="fv-card">
+      <div class="fv-card-icon">${card.icon}</div>
+      <div class="fv-card-name">${card.shortName}</div>
+      <div class="fv-card-value ${isValid?'':'na'}">${isValid ? '$'+fmt(val,2) : 'Yetarli ma\'lumot yo\'q'}</div>
+      ${vsText ? `<div class="fv-card-vs ${vsClass}">${vsText}</div>` : ''}
+      <div class="fv-card-desc">${card.desc}</div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  // Verdict
+  const upsideClass = upside > 8 ? 'up' : upside < -8 ? 'down' : 'flat';
+  const upsideSign = upside > 0 ? '+' : '';
+  html += `
+  <div class="section-title">Yakuniy Hukm</div>
+  <div class="verdict-card ${verdictType}">
+    <div class="verdict-label">// NeXuS Fair Value Tahlili</div>
+    <div class="verdict-text">${verdict.text || '—'}</div>
+    <div class="verdict-prices">
+      <div class="verdict-price-item">
+        <span class="verdict-price-label">Adolatli Narx (FV)</span>
+        <span class="verdict-price-val fv">$${fmt(fv,2)}</span>
+      </div>
+      <div class="verdict-price-item">
+        <span class="verdict-price-label">Joriy Narx</span>
+        <span class="verdict-price-val cur">$${fmt(price,2)}</span>
+      </div>
+      <div class="verdict-price-item">
+        <span class="verdict-price-label">Potensial</span>
+        <span class="verdict-price-val ${upsideClass}">${upsideSign}${fmt(upside,1)}%</span>
+      </div>
+    </div>
+  </div>`;
+
+  return html;
+}
+
+// ─── Penny Stock Render ────────────────────────────────
+function renderPenny(data) {
+  const f = data.filters || {};
+  const filters = f.filters || [];
+  const overall = f.overall || {};
+
+  let html = '';
+
+  // Filter summary
+  html += `<div class="section-title">6-Filter Natijasi</div>
+  <div class="filter-summary">
+    <div class="filter-counts">
+      <div class="count-item"><span class="count-num pass">${f.passCount||0}</span><span class="count-label">PASS</span></div>
+      <div class="count-item"><span class="count-num warn">${f.warnCount||0}</span><span class="count-label">WARN</span></div>
+      <div class="count-item"><span class="count-num fail">${f.failCount||0}</span><span class="count-label">FAIL</span></div>
+    </div>
+    <div class="overall-badge ${overall.type||'danger'}">${overall.text||'—'}</div>
+  </div>`;
+
+  // Filter cards
+  html += `<div class="filters-grid">`;
+  filters.forEach(fc => {
+    const icon = fc.status === 'pass' ? '✅' : fc.status === 'warn' ? '⚠️' : '❌';
+    html += `
+    <div class="filter-card ${fc.status}">
+      <div class="filter-icon">${icon}</div>
+      <div class="filter-body">
+        <div class="filter-name">FILTER ${String(fc.id).padStart(2,'0')} — ${fc.name}</div>
+        <div class="filter-criteria">Mezon: ${fc.criteria}</div>
+        <div class="filter-value ${fc.status}">${fc.value}</div>
+        <div class="filter-comment">${fc.comment}</div>
+      </div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  // AI tahlil
+  html += renderAICard(data.aiAnalysis, 'Penny Stock AI Tahlili');
+  return html;
+}
+
+// ─── Growth Stock Render ───────────────────────────────
+function renderGrowth(data) {
+  let html = '';
+  html += renderScoreCard(data.growthScore, 'growth', 'O\'sish Ko\'rsatkichlari');
+  html += renderAICard(data.aiAnalysis, 'Growth Stock AI Tahlili');
+  return html;
+}
+
+// ─── Value Stock Render ────────────────────────────────
+function renderValue(data) {
+  let html = '';
+  html += renderScoreCard(data.valueScore, 'value', 'Qiymat Ko\'rsatkichlari');
+  html += renderAICard(data.aiAnalysis, 'Value Stock AI Tahlili');
+  return html;
+}
+
+// ─── Score Card ────────────────────────────────────────
+function renderScoreCard(scoreData, mode, title) {
+  if (!scoreData) return '';
+  const { score, maxScore, rating, ratingType, factors } = scoreData;
+  const pct = Math.min((score / maxScore) * 100, 100);
+  const r = 38;
+  const circ = 2 * Math.PI * r;
+
+  const colors = {
+    growth: '#00ff9d',
+    value:  '#a855f7',
+  };
+  const fillColor = colors[mode] || '#00d4ff';
+
+  const ratingColors = {
+    excellent: 'var(--green)',
+    good:      'var(--cyan)',
+    fair:      'var(--yellow)',
+    poor:      'var(--red)',
+  };
+
+  let html = `<div class="section-title">${title}</div>
+  <div class="score-card">
+    <div class="score-dial">
+      <svg viewBox="0 0 88 88">
+        <circle class="score-dial-track" cx="44" cy="44" r="${r}"/>
+        <circle class="score-dial-fill"
+          cx="44" cy="44" r="${r}"
+          stroke="${fillColor}"
+          stroke-dasharray="${circ}"
+          stroke-dashoffset="${circ}"
+          data-pct="${pct}"
+        />
+      </svg>
+      <div class="score-center">
+        <div class="score-num">${score}</div>
+        <div class="score-max">/${maxScore}</div>
+      </div>
+    </div>
+    <div class="score-details">
+      <div class="score-rating" style="color:${ratingColors[ratingType]||'var(--text-primary)'}">${rating}</div>
+      <div class="score-factors">`;
+
+  factors.forEach(fac => {
+    const w = Math.round((fac.points / 25) * 100);
+    html += `
+      <div class="factor-row">
+        <div class="factor-name">${fac.name}</div>
+        <div class="factor-bar-track">
+          <div class="factor-bar-fill ${fac.status}" data-width="${w}" style="width:0%"></div>
+        </div>
+        <div class="factor-val">${fac.value}</div>
+      </div>`;
+  });
+
+  html += `</div></div></div>`;
+  return html;
+}
+
+// ─── AI Card ───────────────────────────────────────────
+function renderAICard(text, title) {
+  if (!text) return '';
+  const cleaned = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  return `
+  <div class="section-title">${title}</div>
+  <div class="ai-card">
+    <div class="ai-card-header">
+      <span class="ai-badge">GEMINI AI</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);letter-spacing:1px">// O'zbek tilida tahlil</span>
+    </div>
+    <div class="ai-content">${cleaned}</div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════
+// UI STATE HELPERS
+// ═══════════════════════════════════════════════
+function setLoading(on) {
+  isLoading = on;
+  document.getElementById('loadingState').classList.toggle('visible', on);
+  document.getElementById('analyzeBtn').disabled = on;
+  document.getElementById('analyzeBtn').textContent = on ? 'TAHLIL QILINMOQDA...' : 'TAHLIL QILISH';
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorState');
+  document.getElementById('errorText').textContent = msg;
+  el.classList.add('visible');
+}
+
+function hideError() {
+  document.getElementById('errorState').classList.remove('visible');
+}
+
+function showResult() {
+  document.getElementById('resultArea').classList.add('visible');
+}
+
+function hideResult() {
+  document.getElementById('resultArea').classList.remove('visible');
+  document.getElementById('resultArea').innerHTML = '';
+}
+
+// ═══════════════════════════════════════════════
+// FORMAT HELPERS
+// ═══════════════════════════════════════════════
+function fmt(n, decimals = 2) {
+  if (n == null || !isFinite(n) || isNaN(n)) return 'N/A';
+  return parseFloat(n).toFixed(decimals);
+}
+
+function fmtBig(n) {
+  if (n == null || n === 0 || !isFinite(n)) return 'N/A';
+  const abs = Math.abs(n);
+  const sign = n < 0 ? '-' : '';
+  if (abs >= 1e12) return sign + '$' + (abs / 1e12).toFixed(2) + 'T';
+  if (abs >= 1e9)  return sign + '$' + (abs / 1e9).toFixed(2) + 'B';
+  if (abs >= 1e6)  return sign + '$' + (abs / 1e6).toFixed(2) + 'M';
+  if (abs >= 1e3)  return sign + '$' + (abs / 1e3).toFixed(1) + 'K';
+  return sign + '$' + abs.toFixed(0);
+}
+
+function modeName(mode) {
+  const map = { penny: '💊 PENNY', growth: '🚀 GROWTH', value: '🛡️ VALUE', fairvalue: '⚖️ FAIR VALUE' };
+  return map[mode] || mode.toUpperCase();
+}
+</script>
+</body>
+</html>
