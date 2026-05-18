@@ -5,7 +5,7 @@
  */
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const yahooFinance = require("yahoo-finance2").default || require("yahoo-finance2");
+const yahooFinance = require("yahoo-finance2").default;
 
 // ─────────────────────────────────────────
 // MAIN HANDLER
