@@ -3,9 +3,8 @@
   "version": "1.0.0",
   "description": "Nexus AI - Professional Stock Analysis Platform",
   "main": "netlify/functions/analyze.js",
-  "type": "module",
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
-    "yahoo-finance2": "^2.11.3"
+    "yahoo-finance2": "2.11.2"
   }
 }
