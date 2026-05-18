@@ -1,21 +1,11 @@
 {
   "name": "nexus-ai-stock-analyzer",
   "version": "1.0.0",
-  "description": "NeXuS AI — Professional Stock Analysis Platform",
-  "main": "index.js",
-  "scripts": {
-    "dev": "netlify dev",
-    "build": "echo 'No build step required'"
-  },
+  "description": "Nexus AI - Professional Stock Analysis Platform",
+  "main": "netlify/functions/analyze.js",
+  "type": "module",
   "dependencies": {
-    "yahoo-finance2": "^2.11.3",
-    "@google/generative-ai": "^0.21.0"
-  },
-  "devDependencies": {
-    "netlify-cli": "^17.0.0"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "license": "MIT"
+    "@google/generative-ai": "^0.21.0",
+    "yahoo-finance2": "^2.11.3"
+  }
 }
