@@ -1,10 +1,8 @@
 {
-  "name": "nexus-ai-stock-analyzer",
+  "name": "nexus-ai",
   "version": "1.0.0",
-  "description": "Nexus AI - Professional Stock Analysis Platform",
-  "main": "netlify/functions/analyze.js",
   "dependencies": {
-    "@google/generative-ai": "^0.21.0",
-    "yahoo-finance2": "2.11.2"
+    "yahoo-finance2": "^2.11.3",
+    "@google/generative-ai": "^0.21.0"
   }
 }
